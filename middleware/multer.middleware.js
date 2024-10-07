@@ -1,6 +1,5 @@
 const upload = require('../configs/setup.multer'); // Nhập config multer
 
-// Hàm middleware cho tải lên nhiều file
 const uploadMultiple = (req, res, next) => {
     const uploadFields = upload.fields([
         { name: 'images', maxCount: 10 }, // Tên trường cho nhiều tệp
@@ -15,5 +14,4 @@ const uploadMultiple = (req, res, next) => {
     });
 };
 
-// Xuất middleware
 module.exports = uploadMultiple;

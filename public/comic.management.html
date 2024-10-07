@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WQ Comic Manager</title>
+    <link rel="stylesheet" href="css/comic.management.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .comic-list {
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            /* Cho phép các item bọc sang hàng mới */
+        }
+
+        .comic-item {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin: 10px;
+            /* Khoảng cách giữa các item */
+            background-color: #fff;
+            width: 150px;
+            /* Chiều rộng cố định cho mỗi item */
+            text-align: center;
+            /* Căn giữa nội dung */
+            cursor: pointer;
+        }
+
+        .comic-item img {
+            width: 100px;
+            /* Chiều rộng cố định cho ảnh bìa */
+            height: auto;
+        }
+
+        .genre-list {
+            font-style: italic;
+            color: #555;
+        }
+
+        button {
+            padding: 10px 20px;
+            /* Tăng kích thước nút */
+            background-color: #007bff;
+            /* Màu nền xanh dương */
+            color: white;
+            /* Màu chữ trắng */
+            border: none;
+            /* Không viền */
+            border-radius: 5px;
+            /* Bo tròn các góc */
+            cursor: pointer;
+            /* Con trỏ chuột chuyển thành pointer */
+            font-size: 16px;
+            /* Kích thước chữ lớn hơn */
+            transition: background-color 0.3s;
+            /* Hiệu ứng chuyển màu */
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            /* Màu nền khi di chuột vào nút */
+        }
+
+        button:focus {
+            outline: none;
+            /* Loại bỏ viền khi nút được chọn */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Danh Sách Truyện Tranh</h1>
+    <button onclick="location.href='/comics/add'">Thêm Truyện</button>
+    <div class="comic-list" id="comicList"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        async function fetchComics() {
+            try {
+                const response = await fetch('/comics/list');
+                const comics = await response.json();
+                const comicList = document.getElementById('comicList');
+                comicList.innerHTML = comics.map(comic => `
+                <div class="comic-item" onclick="location.href='/comics/detail/html/${comic._id}'">
+                    <img src="${comic.coverImage}" alt="Ảnh Bìa" />
+                    <h3>${comic.name}</h3>
+                </div>
+                `).join('');
+            } catch (error) {
+                console.error('Lỗi khi lấy danh sách truyện:', error);
+            }
+        }
+        // Gọi hàm fetchComics khi trang được tải
+        fetchComics();
+    </script>
+</body>
+
+</html>

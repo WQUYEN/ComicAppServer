@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Tiết Truyện Tranh</title>
+    <link rel="stylesheet" href="css/comic.management.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .comic-detail {
+            margin: 20px 0;
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+        }
+
+        .comic-detail img {
+            width: 200px;
+            height: auto;
+            margin-right: 20px;
+        }
+
+        .chapter-list {
+            margin-top: 20px;
+        }
+
+        .chapter-item {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chapter-info {
+            flex-grow: 1;
+        }
+
+        .updated-at {
+            margin-left: 20px;
+            font-style: italic;
+        }
+
+        .action-buttons {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .delete-button {
+            background-color: #dc3545;
+        }
+
+        .delete-button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Chi Tiết Truyện Tranh</h1>
+    <div class="comic-detail" id="comicDetail"></div>
+    <div class="action-buttons" id="actionButtons"></div>
+    <div class="chapter-list" id="chapterList"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        async function fetchComicDetail(id) {
+            try {
+                const response = await fetch(`/comics/html/detail/${id}`);
+                if (!response.ok) {
+                    throw new Error('Không thể lấy thông tin truyện.');
+                }
+                const comic = await response.json();
+                console.log(comic); // Kiểm tra dữ liệu comic
+
+                // Cập nhật tiêu đề trang
+                document.title = comic.name;
+
+                const comicDetail = document.getElementById('comicDetail');
+                comicDetail.innerHTML = `
+                    <img src="${comic.coverImage}" alt="Ảnh Bìa" />
+                    <div>
+                        <h2>${comic.name} (${comic.year})</h2>
+                        <p>Tác Giả: ${comic.author}</p>
+                        <p>Mô Tả: ${comic.description}</p>
+                        <p>Thể loại: ${comic.genres && comic.genres.length > 0 ? comic.genres.map(genre => genre.name).join(', ') : 'Không có thể loại'}</p>
+                    </div>
+                `;
+
+                // Hiển thị nút Sửa và Xoá
+                const actionButtons = document.getElementById('actionButtons');
+                actionButtons.innerHTML = `
+                    <button onclick="editComic('${comic._id}');">Sửa</button>
+                    <button class="delete-button" onclick="deleteComic('${comic._id}');">Xoá</button>
+                `;
+
+                // Gọi hàm để lấy danh sách chapters
+                fetchChapters(comic._id);
+            } catch (error) {
+                console.error('Lỗi khi lấy thông tin truyện:', error);
+                document.getElementById('comicDetail').innerHTML = '<p>Lỗi khi lấy thông tin truyện.</p>';
+            }
+        }
+
+        async function fetchChapters(comicId) {
+            try {
+                const response = await fetch(`/chapter/${comicId}`);
+                if (!response.ok) {
+                    throw new Error('Không thể lấy danh sách chapter.');
+                }
+                const chapters = await response.json();
+
+                // Hiển thị danh sách chapters
+                const chapterList = document.getElementById('chapterList');
+                if (chapters.length === 0) {
+                    chapterList.innerHTML = '<p>Không có chapter nào.</p>';
+                } else {
+                    chapterList.innerHTML = chapters.map(chapter => `
+                        <div class="chapter-item">
+                            <div class="chapter-info">
+                                <h4>Chương ${chapter.chapterNumber}: ${chapter.title || 'Chương không có tiêu đề'}</h4>
+                            </div>
+                            <div class="updated-at">
+                                Cập nhật: ${new Date(chapter.updatedAt).toLocaleString("vi-VN")}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Lỗi khi lấy danh sách chapter:', error);
+                document.getElementById('chapterList').innerHTML = '<p>Lỗi khi lấy danh sách chapter.</p>';
+            }
+        }
+
+        function editComic(id) {
+            location.href = `/comics/edit/html/${id}`; // Chuyển tới trang sửa truyện
+        }
+
+        async function deleteComic(id) {
+            if (confirm('Bạn có chắc chắn muốn xoá truyện này không?')) {
+                try {
+                    const response = await fetch(`/comics/delete/${id}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        alert(data.message || 'Truyện đã được xoá thành công!');
+                        location.href = '/comics'; // Chuyển lại về danh sách truyện
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (error) {
+                    alert('Lỗi: ' + error.message);
+                }
+            }
+        }
+
+        // Lấy ID từ URL
+        const comicId = window.location.pathname.split('/').pop();
+        fetchComicDetail(comicId);
+    </script>
+</body>
+
+</html>

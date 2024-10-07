@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm Truyện Tranh</title>
+    <link rel="stylesheet" href="css/comic.add.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        form {
+            background: #fff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Thêm Truyện Tranh</h1>
+
+    <form id="comicForm">
+        <input type="text" id="name" placeholder="Tên Truyện" required />
+        <input type="text" id="author" placeholder="Tác Giả" required />
+        <input type="number" id="year" placeholder="Năm" required />
+        <textarea id="description" placeholder="Mô Tả" required></textarea>
+
+        <select id="genres" multiple="multiple" required>
+            <!-- Các thể loại sẽ được thêm vào đây từ server -->
+        </select>
+
+        <input type="file" id="coverImage" accept="image/*" required />
+        <button type="submit">Thêm Truyện</button>
+    </form>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#genres').select2({
+                placeholder: "Chọn thể loại",
+                allowClear: true
+            });
+            fetchGenres();
+        });
+
+        async function fetchGenres() {
+            try {
+                const response = await fetch('/genres/list');
+                const genresList = await response.json();
+                const genresSelect = $('#genres');
+                genresSelect.empty();
+
+                genresList.forEach(genre => {
+                    const option = new Option(genre.name, genre._id);
+                    genresSelect.append(option);
+                });
+
+                genresSelect.trigger('change');
+            } catch (error) {
+                console.error('Lỗi khi lấy danh sách thể loại:', error);
+            }
+        }
+
+        document.getElementById('comicForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const author = document.getElementById('author').value;
+            const year = document.getElementById('year').value;
+            const description = document.getElementById('description').value;
+            const genres = $('#genres').val();
+            const coverImage = document.getElementById('coverImage').files[0];
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('author', author);
+            formData.append('year', year);
+            formData.append('description', description);
+            formData.append('genres', JSON.stringify(genres));
+            formData.append('coverImage', coverImage);
+
+            try {
+                const response = await fetch('/comics/add', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Đã xảy ra lỗi khi thêm truyện.');
+                }
+
+                alert('Truyện đã được thêm thành công!');
+                // Bạn có thể chuyển hướng hoặc reset form ở đây
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sửa Truyện Tranh</title>
+    <link rel="stylesheet" href="css/comic.management.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        form {
+            background: #fff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        /* tabnav */
+        .menuToggle {
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        #tabNav {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: #6c757d;
+            /* Màu xám */
+            width: 200px;
+            height: 100%;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .tabnav a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .tabnav a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="menuToggle" style="cursor: pointer; margin-bottom: 20px;">&#9776; Menu</div>
+
+    <div id="tabNav">
+        <ul class="tabnav" style="list-style: none; padding: 0;">
+            <li><a href="/comics" style="color: white; text-decoration: none;">Về Trang Chủ</a></li>
+            <li><a href="/logout" style="color: white; text-decoration: none;">Đăng Xuất</a></li>
+        </ul>
+    </div>
+    <h1>Sửa Truyện Tranh</h1>
+
+    <form id="editForm" enctype="multipart/form-data">
+        <input type="hidden" id="comicId">
+        <input type="text" id="name" placeholder="Tên Truyện" required />
+        <input type="text" id="author" placeholder="Tác Giả" required />
+        <input type="number" id="year" placeholder="Năm" required />
+        <textarea id="description" placeholder="Mô Tả" required></textarea>
+
+        <select id="genres" multiple="multiple" required>
+            <!-- Các thể loại sẽ được thêm vào đây từ server -->
+        </select>
+
+        <input type="file" id="coverImage" accept="image/*" />
+        <button type="submit">Lưu Thay Đổi</button>
+    </form>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#genres').select2({
+                placeholder: "Chọn thể loại",
+                allowClear: true
+            });
+            fetchGenres();
+        });
+
+        async function fetchGenres() {
+            try {
+                const response = await fetch('/genres/list');
+                const genresList = await response.json();
+                const genresSelect = $('#genres');
+                genresSelect.empty();
+
+                genresList.forEach(genre => {
+                    const option = new Option(genre.name, genre._id);
+                    genresSelect.append(option);
+                });
+
+                // Lấy ID từ URL và lấy thông tin truyện
+                const comicId = window.location.pathname.split('/').pop();
+                fetchComicForEdit(comicId);
+            } catch (error) {
+                console.error('Lỗi khi lấy danh sách thể loại:', error);
+            }
+        }
+
+        async function fetchComicForEdit(id) {
+            try {
+                const response = await fetch(`/comics/html/detail/${id}`);
+                if (!response.ok) {
+                    throw new Error('Không thể lấy thông tin truyện.');
+                }
+                const comic = await response.json();
+
+                // Hiển thị thông tin vào form
+                document.getElementById('comicId').value = comic._id;
+                document.getElementById('name').value = comic.name;
+                document.getElementById('author').value = comic.author;
+                document.getElementById('year').value = comic.year;
+                document.getElementById('description').value = comic.description;
+
+                // Chọn các thể loại đã được gán cho truyện
+                $('#genres').val(comic.genres.map(genre => genre._id)); // Giả sử genres là mảng các đối tượng
+                $('#genres').trigger('change'); // Cập nhật Select2
+            } catch (error) {
+                console.error('Lỗi khi lấy thông tin truyện:', error);
+            }
+        }
+        document.getElementById('menuToggle').addEventListener('click', function () {
+            const tabNav = document.getElementById('tabNav');
+            if (tabNav.style.display === 'none') {
+                tabNav.style.display = 'block';
+            } else {
+                tabNav.style.display = 'none';
+            }
+        });
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            // Vô hiệu hóa nút "Lưu Thay Đổi"
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            const id = document.getElementById('comicId').value;
+            const name = document.getElementById('name').value;
+            const author = document.getElementById('author').value;
+            const year = document.getElementById('year').value;
+            const description = document.getElementById('description').value;
+            const genres = $('#genres').val(); // Lấy giá trị genres đã chọn
+            const coverImage = document.getElementById('coverImage').files[0]; // Lấy tệp ảnh bìa nếu có
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('author', author);
+            formData.append('year', year);
+            formData.append('description', description);
+            formData.append('genres', JSON.stringify(genres)); // Chuyển mảng genres thành chuỗi JSON
+
+            if (coverImage) {
+                formData.append('coverImage', coverImage); // Thêm ảnh bìa vào formData
+            }
+
+            try {
+                const response = await fetch(`/comics/update/${id}`, {
+                    method: 'PUT',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Đã xảy ra lỗi khi cập nhật truyện.');
+                }
+
+                alert('Truyện đã được cập nhật thành công!');
+                location.href = `/comics/detail/html/${id}`; // Chuyển hướng về trang chi tiết truyện
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            } finally {
+                // Kích hoạt lại nút "Lưu Thay Đổi" sau khi hoàn tất
+                submitButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

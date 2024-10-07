@@ -6,8 +6,13 @@ const createChapter = async (req, res) => {
     try {
         const { title, chapterNumber, content, comicId } = req.body;
 
+        // Kiểm tra xem req.files.images có phải là mảng không
+        if (!Array.isArray(req.files.images) || req.files.images.length === 0) {
+            return res.status(400).json({ message: 'No images uploaded or invalid file format' });
+        }
+
         // Tải ảnh lên Cloudinary
-        const imageUploadPromises = req.files.map(file => {
+        const imageUploadPromises = req.files.images.map(file => {
             return new Promise((resolve, reject) => {
                 cloudinary.uploader.upload_stream({ resource_type: 'auto' }, (error, result) => {
                     if (error) {
@@ -33,7 +38,10 @@ const createChapter = async (req, res) => {
         const savedChapter = await newChapter.save();
 
         // Cập nhật comic để thêm chapter vào mảng chapters
-        await Comic.findByIdAndUpdate(comicId, { $push: { chapters: savedChapter._id } });
+        await Comic.findByIdAndUpdate(comicId, { 
+            $push: { chapters: savedChapter._id },
+            updatedAt: Date.now() // Cập nhật updatedAt
+        });
 
         res.status(201).json(savedChapter);
     } catch (error) {
@@ -44,7 +52,6 @@ const createChapter = async (req, res) => {
         });
     }
 };
-
 // Hàm sửa chapter
 const updateChapter = async (req, res) => {
     try {
