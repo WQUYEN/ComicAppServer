@@ -1,6 +1,8 @@
 const Chapter = require('../models/chapter.model');
 const cloudinary = require('../configs/setup.cloudinary');
 const Comic = require('../models/comic.model');
+const ReadingHistory = require('../models/reading.history.model');
+const {updateReadingHistory, getReadingHistory} = require('./reading.history.controller');
 
 const createChapter = async (req, res) => {
     try {
@@ -103,33 +105,75 @@ const deleteChapter = async (req, res) => {
         });
     }
 };
+// const getChapterDetails = () => async (req, res) => {
+//     try {
+//         const chapterId = req.params.chapterId;
+//         const comicId = req.params.comicId;
+//         const userId = req.user._id; // Giả sử bạn đã xác thực người dùng và lấy userId
+
+//         // Tìm comic và populate các chapter
+//         const comic = await Comic.findById(comicId).populate('chapters');
+//         if (!comic) return res.status(404).json({ message: 'Comic not found' });
+
+//         // Tìm chapter theo ID
+//         const chapter = comic.chapters.find(chap => chap._id.toString() === chapterId);
+//         if (!chapter) return res.status(404).json({ message: 'Chapter not found' });
+
+//         // Kiểm tra xem comic đã có trong lịch sử đọc chưa
+//         const existingHistory = await ReadingHistory.findOne({ user: userId, comic: comicId });
+
+//         // Nếu comic chưa có trong lịch sử đọc, thêm vào
+//         if (!existingHistory) {
+//             await updateReadingHistory(ReadingHistory)(req, res, { params: { userId, comicId } });
+//         }
+
+//         // Tăng readCount lên 1 chỉ nếu chapter được đọc lần đầu
+//         if (!req.session || !req.session.readChapters) {
+//             req.session.readChapters = new Set(); // Khởi tạo tập hợp các chapter đã đọc
+//         }
+
+//         if (!req.session.readChapters.has(chapterId)) {
+//             comic.readCount += 1;
+//             await comic.save();
+//             req.session.readChapters.add(chapterId); // Đánh dấu chapter là đã đọc
+//             console.log("Đã tăng readCount lên 1");
+//         }
+
+//         console.log("Gọi getChapter 1 lần");
+//         // Trả về thông tin chi tiết chapter
+//         return res.json(chapter);
+//     } catch (error) {
+//         console.error('Error fetching chapter details:', error);
+//         return res.status(500).json({ message: 'Internal Server Error' });
+//     }
+// };
+
 const getChapterDetails = async (req, res) => {
     try {
         const chapterId = req.params.chapterId;
         const comicId = req.params.comicId;
-
-        // Tìm comic và populate các chapter
         const comic = await Comic.findById(comicId).populate('chapters');
         if (!comic) return res.status(404).json({ message: 'Comic not found' });
 
-        // Tìm chapter theo ID
         const chapter = comic.chapters.find(chap => chap._id.toString() === chapterId);
         if (!chapter) return res.status(404).json({ message: 'Chapter not found' });
 
+      
+        
+
         // Tăng readCount lên 1 chỉ nếu chapter được đọc lần đầu
         if (!req.session || !req.session.readChapters) {
-            req.session.readChapters = new Set(); // Khởi tạo tập hợp các chapter đã đọc
+            req.session.readChapters = new Set();
         }
 
         if (!req.session.readChapters.has(chapterId)) {
             comic.readCount += 1;
             await comic.save();
-            req.session.readChapters.add(chapterId); // Đánh dấu chapter là đã đọc
+            req.session.readChapters.add(chapterId);
             console.log("Đã tăng readCount lên 1");
+              // Cập nhật lịch sử đọc
         }
 
-        console.log("Gọi getChapter 1 lần");
-        // Trả về thông tin chi tiết chapter
         return res.json(chapter);
     } catch (error) {
         console.error('Error fetching chapter details:', error);

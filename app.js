@@ -6,6 +6,7 @@ const comicRouter = require('./routers/comic.router');
 const chapterRouter = require('./routers/chapter.router');
 const favoriteRouter = require('./routers/favorite.router');
 const commentRouter = require('./routers/comment.router');
+const historyRouter = require('./routers/reading.history.router');
 const port = process.env.PORT;
 require('./configs/connect.db')
 
@@ -26,6 +27,7 @@ app.use('/comics',comicRouter);
 app.use('/chapter',chapterRouter);
 app.use('/favorite',favoriteRouter);
 app.use('/comments',commentRouter);
+app.use('/history',historyRouter);
 app.listen(port , ()=>{
     console.log(`Server running  on port ${port}`);
 

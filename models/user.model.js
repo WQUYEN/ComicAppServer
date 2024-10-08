@@ -67,10 +67,11 @@ userSchema.statics.findByCredentials = async (email, password) => {
       throw new Error("Invalid email or password."); // Lỗi mật khẩu không khớp
   }
 
-  return {
-    id: user._id, // Thêm ID vào phản hồi
-    name: user.name,
-    email: user.email}; // Trả về người dùng nếu thông tin đăng nhập hợp lệ
+  // return {
+  //   id: user._id, // Thêm ID vào phản hồi
+  //   name: user.name,
+  //   email: user.email};
+  return user; // Trả về người dùng nếu thông tin đăng nhập hợp lệ
 };
 
 const User = mongoose.model('User',userSchema);

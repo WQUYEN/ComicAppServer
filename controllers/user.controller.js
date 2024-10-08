@@ -1,7 +1,9 @@
 // user.controller.js
+require('dotenv').config(); 
 const User = require('../models/user.model');
-
+const jwt = require('jsonwebtoken');
 const cloudinary = require('cloudinary').v2; // Đảm bảo bạn đã cấu hình Cloudinary
+const JWT_KEY = process.env.JWT_KEY;
 
 const createUser = async (req, res) => {
   try {
@@ -36,18 +38,6 @@ const createUser = async (req, res) => {
     res.status(400).send({ error: error.message }); // Gửi thông báo lỗi
   }
 };
-
-const userLogin = async (req, res) => {
-  try {
-      const { email, password } = req.body;
-      const user = await User.findByCredentials(email, password);
-      res.status(200).send({ user });
-  } catch (error) {
-      console.error('Login error:', error.message); // Ghi log lỗi
-      res.status(401).send({ error: error.message }); // Trả về mã trạng thái 401
-  }
-};
-
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({});
@@ -56,19 +46,42 @@ const getAllUsers = async (req, res) => {
     res.status(400).send({ error });
   }
 };
+const userLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findByCredentials(email, password);
+
+    const token = jwt.sign({ _id: user._id }, JWT_KEY, { expiresIn: '1h' });
+    
+    res.status(200).send({ user, token });
+  } catch (error) {
+    console.error('Login error:', error.message);
+    res.status(401).send({ error: error.message });
+  }
+};
+
 
 const getUserById = async (req, res) => {
   try {
-    const userId = req.params.id;
-    const user = await User.findById(userId);
+      const userId = req.params.id;
+      // Kiểm tra xem userId từ token có khớp với userId từ params không
+      if (req.userId.toString() !== userId) {
+          console.warn('Access denied: User ID mismatch');
+          return res.status(403).json({ error: 'Access denied' });
+      }
 
-    if (!user) {
-      return res.status(404).send({ error: 'User not founds !' });
-    }
+      // Tìm người dùng trong cơ sở dữ liệu
+      const user = await User.findById(userId);
 
-    res.status(200).send( user );
+      if (!user) {
+          console.warn('User not found:', userId);
+          return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.status(200).send(user);
   } catch (error) {
-    res.status(400).send({ error: error.message });
+      console.error('Error fetching user:', error.message);
+      res.status(400).send({ error: error.message });
   }
 };
 module.exports = {createUser, userLogin, getAllUsers, getUserById}
