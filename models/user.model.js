@@ -43,6 +43,14 @@ const userSchema = new mongoose.Schema({
       type: Boolean,
       default:false
     },
+    role_id: {
+      type: String,
+      enum: ["admin", "customer", "staff"],
+      default: "customer",
+    },
+    confirmationCode: { 
+      type: String 
+    },
     
   });
 
